@@ -15,6 +15,17 @@ from agno.agent import Agent
 from agno.tools.mcp import MultiMCPTools
 from agno.models.openai import OpenAIChat
 from agno.models.google import Gemini
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log
+)
+import logging
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 # 导入API配置
 from api_config import get_api_key, validate_api_setup
@@ -28,6 +39,10 @@ from travel_prompts import (
 # 项目根目录
 PROJECT_ROOT = Path(__file__).parent.absolute()
 MCP_SERVER_PATH = PROJECT_ROOT / "mcp_server.py"
+
+# 配置常量
+AGENT_TIMEOUT = 180  # 智能体超时时间（秒）
+MAX_RETRIES = 3  # 最大重试次数
 
 # 导入智能体提示词
 try:
@@ -114,7 +129,30 @@ class MultiAgentTravelPlanner:
             env["GOOGLE_API_KEY"] = self.gemini_key
             
         return env
-    
+
+    @retry(
+        stop=stop_after_attempt(MAX_RETRIES),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((Exception,)),
+        before_sleep=before_sleep_log(logger, logging.WARNING)
+    )
+    async def _run_agent_with_retry(self, agent: Agent, request: str):
+        """
+        带重试机制的智能体执行
+
+        Args:
+            agent: 智能体实例
+            request: 请求内容
+
+        Returns:
+            智能体响应结果
+        """
+        try:
+            return await agent.arun(request)
+        except Exception as e:
+            logger.warning(f"智能体执行失败，准备重试: {str(e)}")
+            raise
+
     async def collect_travel_information(self, travel_request: str, progress_callback=None):
         """
         使用信息收集智能体收集旅行信息
@@ -175,9 +213,21 @@ class MultiAgentTravelPlanner:
             
             if progress_callback:
                 progress_callback(3, 8, "正在搜索目的地信息...")
-            
-            # 运行信息收集智能体
-            collection_result = await collector_agent.arun(collection_request)
+
+            # 运行信息收集智能体（带超时和重试）
+            try:
+                collection_result = await asyncio.wait_for(
+                    self._run_agent_with_retry(collector_agent, collection_request),
+                    timeout=AGENT_TIMEOUT
+                )
+            except asyncio.TimeoutError:
+                error_msg = f"信息收集超时（>{AGENT_TIMEOUT}秒），请稍后重试"
+                logger.error(error_msg)
+                raise TimeoutError(error_msg)
+            except Exception as e:
+                error_msg = f"信息收集失败: {str(e)}"
+                logger.error(error_msg)
+                raise
             
             if progress_callback:
                 progress_callback(4, 8, "信息收集完成！")
@@ -274,9 +324,21 @@ class MultiAgentTravelPlanner:
         
         if progress_callback:
             progress_callback(7, 8, "正在制定详细行程方案...")
-        
-        # 运行行程规划智能体
-        planning_result = await planner_agent.arun(planning_request)
+
+        # 运行行程规划智能体（带超时和重试）
+        try:
+            planning_result = await asyncio.wait_for(
+                self._run_agent_with_retry(planner_agent, planning_request),
+                timeout=AGENT_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            error_msg = f"行程规划超时（>{AGENT_TIMEOUT}秒），请稍后重试"
+            logger.error(error_msg)
+            raise TimeoutError(error_msg)
+        except Exception as e:
+            error_msg = f"行程规划失败: {str(e)}"
+            logger.error(error_msg)
+            raise
         
         if progress_callback:
             progress_callback(8, 8, "详细旅行方案制定完成！")
@@ -378,8 +440,21 @@ class MultiAgentTravelPlanner:
                 请基于上述旅行计划上下文，针对用户的问题提供详细、实用的回答。
                 如果需要最新信息，请主动搜索获取。
                 """
-                
-                result = await follow_up_agent.arun(follow_up_request)
+
+                # 运行追问智能体（带超时和重试）
+                try:
+                    result = await asyncio.wait_for(
+                        self._run_agent_with_retry(follow_up_agent, follow_up_request),
+                        timeout=AGENT_TIMEOUT
+                    )
+                except asyncio.TimeoutError:
+                    error_msg = f"追问处理超时（>{AGENT_TIMEOUT}秒），请稍后重试"
+                    logger.error(error_msg)
+                    raise TimeoutError(error_msg)
+                except Exception as e:
+                    error_msg = f"追问处理失败: {str(e)}"
+                    logger.error(error_msg)
+                    raise
         else:
             if progress_callback:
                 progress_callback(2, 4, "正在分析现有计划...")
@@ -404,11 +479,24 @@ class MultiAgentTravelPlanner:
             
             用户问题：
             {question}
-            
+
             请提供详细、实用的回答。
             """
-            
-            result = await follow_up_agent.arun(follow_up_request)
+
+            # 运行追问智能体（带超时和重试）
+            try:
+                result = await asyncio.wait_for(
+                    self._run_agent_with_retry(follow_up_agent, follow_up_request),
+                    timeout=AGENT_TIMEOUT
+                )
+            except asyncio.TimeoutError:
+                error_msg = f"追问处理超时（>{AGENT_TIMEOUT}秒），请稍后重试"
+                logger.error(error_msg)
+                raise TimeoutError(error_msg)
+            except Exception as e:
+                error_msg = f"追问处理失败: {str(e)}"
+                logger.error(error_msg)
+                raise
         
         if progress_callback:
             progress_callback(4, 4, "回答生成完成！")

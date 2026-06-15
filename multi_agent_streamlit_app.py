@@ -516,9 +516,13 @@ def handle_multi_agent_travel_planning(form_data, all_keys_filled):
                         
                     else:
                         st.error(f"❌ Multi-Agent 规划失败: {result.get('error', '未知错误')}")
-                        
+
+                except TimeoutError as e:
+                    st.error(f"⏰ {str(e)}")
+                    st.info("💡 提示：智能体处理时间较长，建议稍后重试或简化需求描述。")
                 except Exception as e:
                     st.error(f"❌ 系统错误: {str(e)}")
+                    st.info("💡 提示：请检查网络连接和API密钥配置，或稍后重试。")
 
 
 def generate_download_options(response, form_data):
