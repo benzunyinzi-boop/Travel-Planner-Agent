@@ -1,5 +1,5 @@
 """
-多智能体AI旅行规划助手 - Streamlit前端界面
+Travel-Planner-Agent - Streamlit前端界面
 使用两个专门的智能体协作完成详细的旅行规划
 """
 
@@ -24,7 +24,7 @@ from travel_prompts import QUICK_QUESTIONS
 
 # 配置页面 - 必须是第一个 Streamlit 命令
 st.set_page_config(
-    page_title="多智能体AI旅行规划助手",
+    page_title="Travel-Planner-Agent",
     page_icon="🤖✈️",
     layout="wide"
 )
@@ -127,7 +127,7 @@ def create_text_download_link(text_content, filename):
 
 def display_multi_agent_status():
     """显示多智能体系统状态和工作流程"""
-    with st.expander("🤖 多智能体AI旅行规划系统", expanded=False):
+    with st.expander("🤖 Travel-Planner-Agent System", expanded=False):
         col1, col2 = st.columns(2)
         
         with col1:
@@ -158,7 +158,7 @@ def display_multi_agent_status():
             - 📝 实用指南编制
             """)
         
-        st.markdown("### 🔄 多智能体协作流程")
+        st.markdown("### 🔄 Multi-Agent Collaboration")
         st.markdown("""
         1. **信息收集阶段** (3-4分钟)
            - 🔍 信息收集智能体启动，全面搜索目的地相关信息
@@ -199,7 +199,7 @@ def setup_sidebar():
     """设置侧边栏API密钥配置"""
     with st.sidebar:
         st.header("🔑 API 密钥配置")
-        st.markdown("请输入您的 API 密钥以使用多智能体旅行规划系统。")
+        st.markdown("请输入您的 API 密钥以使用 Travel-Planner-Agent 系统。")
         
         # 模型提供商选择
         st.session_state.model_provider = st.selectbox(
@@ -245,9 +245,9 @@ def setup_sidebar():
         all_keys_filled = all(required_keys)
 
         if not all_keys_filled:
-            st.error("❌ 请填写所有必需的 API 密钥以启用多智能体系统")
+            st.error("❌ 请填写所有必需的 API 密钥以启用 Multi-Agent 系统")
         else:
-            st.success("✅ 多智能体系统已就绪")
+            st.success("✅ Multi-Agent 系统已就绪")
         
         # 显示当前选择的模型信息
         if st.session_state.model_provider == "OpenAI":
@@ -256,7 +256,7 @@ def setup_sidebar():
             st.info("🤖 使用 Google Gemini 2.0 驱动两个智能体")
         
         # 多智能体系统介绍
-        with st.expander("🤖 多智能体系统优势"):
+        with st.expander("🤖 Multi-Agent System 优势"):
             st.markdown("""
             ### 🎯 专业分工优势：
             - **信息收集智能体**: 专注于全面、准确的信息搜索
@@ -292,7 +292,7 @@ def setup_sidebar():
             2. 获取免费的Gemini API密钥
             """)
         
-        with st.expander("📦 多智能体功能说明"):
+        with st.expander("📦 Multi-Agent 功能说明"):
             st.markdown("""
             **信息收集智能体** 将搜索：
             - 🌍 目的地详细信息
@@ -315,14 +315,14 @@ def setup_sidebar():
 def setup_input_form():
     """设置输入表单"""
     # 标题和描述
-    st.title("🤖✈️ 多智能体AI旅行规划助手")
+    st.title("🤖✈️ Travel-Planner-Agent")
     
     # 检查是否已有旅行计划
     if st.session_state.get('travel_plan'):
-        st.success("🎉 您已有一个由多智能体系统制定的详细旅行计划！可以在下方对话区进行追问，或重新规划新的旅行。")
+        st.success("🎉 您已有一个由 Multi-Agent 系统制定的详细旅行计划！可以在下方对话区进行追问，或重新规划新的旅行。")
         
         # 显示当前计划概要
-        with st.expander("📋 多智能体旅行计划概要", expanded=False):
+        with st.expander("📋 Multi-Agent 旅行计划概要", expanded=False):
             if st.session_state.get('collected_info'):
                 st.markdown("#### 🔍 信息收集智能体收集的信息")
                 st.text(st.session_state['collected_info'][:1000] + "..." if len(st.session_state['collected_info']) > 1000 else st.session_state['collected_info'])
@@ -331,7 +331,7 @@ def setup_input_form():
             st.text(st.session_state['travel_plan'][:1000] + "..." if len(st.session_state['travel_plan']) > 1000 else st.session_state['travel_plan'])
     
     st.markdown("""
-    这个**多智能体AI旅行规划助手**使用先进的**双智能体协作架构**，通过专业分工提供更详细、更完整的旅行规划服务：
+    这个 **Travel-Planner-Agent** 使用先进的**双智能体协作架构**，通过专业分工提供更详细、更完整的旅行规划服务：
 
     ### 🤖 双智能体协作系统
     - **🔍 信息收集智能体**: 专门负责全面搜索和收集旅行相关信息
@@ -352,7 +352,7 @@ def setup_input_form():
     - 💬 智能对话系统，支持计划修改和详细询问
     - 🔄 多层次备选方案设计
 
-    ### 🚀 多智能体优势
+    ### 🚀 Multi-Agent 优势
     - **更全面的信息**: 专门的信息收集智能体确保信息的完整性和准确性
     - **更详细的规划**: 专门的规划智能体基于丰富信息制定更细致的方案
     - **更高的效率**: 分工合作，提高处理速度和质量
@@ -436,7 +436,7 @@ def handle_multi_agent_travel_planning(form_data, all_keys_filled):
     col_submit, col_reset = st.columns([3, 1])
 
     with col_submit:
-        submit_button = st.button("🚀 启动多智能体规划系统", type="primary", disabled=not all_keys_filled)
+        submit_button = st.button("🚀 启动 Multi-Agent 规划系统", type="primary", disabled=not all_keys_filled)
 
     with col_reset:
         if st.session_state.get('travel_plan'):
@@ -465,14 +465,14 @@ def handle_multi_agent_travel_planning(form_data, all_keys_filled):
                 form_data['dietary_restrictions']
             )
             
-            # 显示多智能体状态
+            # 显示 Multi-Agent 状态
             display_multi_agent_status()
             
             # 创建进度跟踪器
             progress_callback = create_progress_tracker()
             
             # 运行多智能体系统
-            with st.spinner("🤖 多智能体系统正在工作..."):
+            with st.spinner("🤖 Multi-Agent 系统正在工作..."):
                 try:
                     # 使用 asyncio 运行异步函数
                     result = asyncio.run(run_multi_agent_travel_planner(
@@ -496,11 +496,11 @@ def handle_multi_agent_travel_planning(form_data, all_keys_filled):
                             'preferences': form_data['travel_preferences']
                         }
                         
-                        st.success("🎉 多智能体旅行规划完成！")
+                        st.success("🎉 Multi-Agent 旅行规划完成！")
                         
                         # 显示结果
                         st.markdown("---")
-                        st.header("📋 多智能体旅行规划结果")
+                        st.header("📋 Multi-Agent 旅行规划结果")
                         
                         # 创建标签页显示不同内容
                         tab1, tab2 = st.tabs(["📅 完整旅行方案", "🔍 收集的信息详情"])
@@ -517,7 +517,7 @@ def handle_multi_agent_travel_planning(form_data, all_keys_filled):
                         generate_download_options(result['detailed_itinerary'], form_data)
                         
                     else:
-                        st.error(f"❌ 多智能体规划失败: {result.get('error', '未知错误')}")
+                        st.error(f"❌ Multi-Agent 规划失败: {result.get('error', '未知错误')}")
                         
                 except Exception as e:
                     st.error(f"❌ 系统错误: {str(e)}")
@@ -803,7 +803,7 @@ def main():
     # 如果已有旅行计划，显示查看选项
     if st.session_state.get('travel_plan'):
         st.markdown("---")
-        st.info("🎉 多智能体系统已为您制定了详细的旅行计划！您可以继续在下方进行深度对话。")
+        st.info("🎉 Multi-Agent 系统已为您制定了详细的旅行计划！您可以继续在下方进行深度对话。")
     
     # 处理多智能体旅行规划
     handle_multi_agent_travel_planning(form_data, all_keys_filled)

@@ -1,4 +1,4 @@
-# 🤖✈️ 多智能体AI旅行规划助手
+# 🤖✈️ Travel-Planner-Agent
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.44.1-FF4B4B.svg)](https://streamlit.io/)
