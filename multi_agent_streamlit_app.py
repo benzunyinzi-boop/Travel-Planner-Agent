@@ -29,10 +29,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# 设置默认的API密钥环境变量
-os.environ.setdefault("SEARCHAPI_API_KEY", "5722Vw5rYoJTVHyffqNph3F4")
-os.environ.setdefault("OPENAI_API_KEY", "sk-widDrKmkgrnCsmVg281bD224F984400eBb4586657a519a68")
-os.environ.setdefault("SEARCHAPI_API_KEY", "ESHHZnUfrzw6yWyzfnXxA2jz")
+# 从环境变量或.env文件加载API密钥
+# 注意：不要在代码中硬编码API密钥，请在.env文件中配置
 
 
 def create_travel_plan_pdf(travel_plan_text, source, destination, travel_dates, budget):

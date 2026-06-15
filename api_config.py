@@ -5,30 +5,10 @@ API Keys Configuration Management Module
 
 import os
 from typing import Dict, List, Optional
+from dotenv import load_dotenv
 
-def load_env_file(env_path: str = ".env") -> None:
-    """
-    手动加载.env文件中的环境变量
-    
-    Args:
-        env_path: .env文件路径
-    """
-    try:
-        with open(env_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
-                    key = key.strip()
-                    value = value.strip().strip('"').strip("'")
-                    os.environ[key] = value
-    except FileNotFoundError:
-        print(f"⚠️ 环境变量文件 {env_path} 未找到，请确保已正确配置API密钥")
-    except Exception as e:
-        print(f"⚠️ 加载环境变量文件时出错: {e}")
-
-# 初始化环境变量
-load_env_file()
+# 加载.env文件中的环境变量
+load_dotenv()
 
 class APIKeyManager:
     """API密钥管理器"""
