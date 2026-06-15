@@ -15,6 +15,7 @@ __pycache__/
 
 # 日志文件
 *.log
+logs/
 
 # IDE配置文件
 .vscode/

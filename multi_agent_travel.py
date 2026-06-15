@@ -24,8 +24,8 @@ from tenacity import (
 )
 import logging
 
-# 配置日志
-logger = logging.getLogger(__name__)
+# 导入日志配置
+from logger_config import get_logger, generate_trace_id
 
 # 导入API配置
 from api_config import get_api_key, validate_api_setup
@@ -81,18 +81,24 @@ class MultiAgentTravelPlanner:
     def __init__(self, model_provider="OpenAI", openai_key=None, gemini_key=None, searchapi_key=None):
         """
         初始化多智能体旅行规划系统
-        
+
         Args:
             model_provider: 模型提供商 ("OpenAI" 或 "Gemini")
             openai_key: OpenAI API密钥（可选，将从环境变量获取）
             gemini_key: Gemini API密钥（可选，将从环境变量获取）
             searchapi_key: SearchAPI密钥（可选，将从环境变量获取）
         """
+        # 生成本次会话的追踪ID
+        self.trace_id = generate_trace_id()
+        self.logger = get_logger(__name__, self.trace_id)
+
         self.model_provider = model_provider
         # 优先使用传入的参数，否则从环境变量获取
         self.openai_key = openai_key or get_api_key("openai_key")
-        self.gemini_key = gemini_key or get_api_key("gemini_key") 
+        self.gemini_key = gemini_key or get_api_key("gemini_key")
         self.searchapi_key = searchapi_key or get_api_key("searchapi_key")
+
+        self.logger.info(f"初始化旅行规划系统 - 模型提供商: {model_provider}")
         
     def _validate_keys(self):
         """验证API密钥是否完整"""
@@ -134,7 +140,7 @@ class MultiAgentTravelPlanner:
         stop=stop_after_attempt(MAX_RETRIES),
         wait=wait_exponential(multiplier=1, min=4, max=10),
         retry=retry_if_exception_type((Exception,)),
-        before_sleep=before_sleep_log(logger, logging.WARNING)
+        before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING)
     )
     async def _run_agent_with_retry(self, agent: Agent, request: str):
         """
@@ -148,27 +154,33 @@ class MultiAgentTravelPlanner:
             智能体响应结果
         """
         try:
-            return await agent.arun(request)
+            self.logger.info(f"执行智能体: {agent.name}")
+            result = await agent.arun(request)
+            self.logger.info(f"智能体执行成功: {agent.name}")
+            return result
         except Exception as e:
-            logger.warning(f"智能体执行失败，准备重试: {str(e)}")
+            self.logger.warning(f"智能体执行失败，准备重试: {agent.name} - {str(e)}")
             raise
 
     async def collect_travel_information(self, travel_request: str, progress_callback=None):
         """
         使用信息收集智能体收集旅行信息
-        
+
         Args:
             travel_request: 旅行请求
             progress_callback: 进度回调函数
-            
+
         Returns:
             str: 收集到的详细旅行信息（JSON格式）
         """
+        self.logger.info("开始收集旅行信息")
+
         if progress_callback:
             progress_callback(1, 8, "正在启动信息收集智能体...")
-        
+
         # 验证API密钥
         self._validate_keys()
+        self.logger.debug("API密钥验证通过")
         
         # 获取环境变量和模型
         env = self._get_environment()
@@ -222,11 +234,11 @@ class MultiAgentTravelPlanner:
                 )
             except asyncio.TimeoutError:
                 error_msg = f"信息收集超时（>{AGENT_TIMEOUT}秒），请稍后重试"
-                logger.error(error_msg)
+                self.logger.error(error_msg)
                 raise TimeoutError(error_msg)
             except Exception as e:
                 error_msg = f"信息收集失败: {str(e)}"
-                logger.error(error_msg)
+                self.logger.error(error_msg, exc_info=True)
                 raise
             
             if progress_callback:
@@ -252,6 +264,8 @@ class MultiAgentTravelPlanner:
         Returns:
             str: 详细的旅行行程方案
         """
+        self.logger.info("开始制定详细行程")
+
         if progress_callback:
             progress_callback(5, 8, "正在启动行程规划智能体...")
         
@@ -393,6 +407,8 @@ class MultiAgentTravelPlanner:
         Returns:
             str: 针对追问的详细回答
         """
+        self.logger.info(f"处理追问: {question[:50]}...")
+
         if progress_callback:
             progress_callback(1, 4, "正在分析您的问题...")
         
@@ -449,11 +465,11 @@ class MultiAgentTravelPlanner:
                     )
                 except asyncio.TimeoutError:
                     error_msg = f"追问处理超时（>{AGENT_TIMEOUT}秒），请稍后重试"
-                    logger.error(error_msg)
+                    self.logger.error(error_msg)
                     raise TimeoutError(error_msg)
                 except Exception as e:
                     error_msg = f"追问处理失败: {str(e)}"
-                    logger.error(error_msg)
+                    self.logger.error(error_msg)
                     raise
         else:
             if progress_callback:
@@ -491,11 +507,11 @@ class MultiAgentTravelPlanner:
                 )
             except asyncio.TimeoutError:
                 error_msg = f"追问处理超时（>{AGENT_TIMEOUT}秒），请稍后重试"
-                logger.error(error_msg)
+                self.logger.error(error_msg)
                 raise TimeoutError(error_msg)
             except Exception as e:
                 error_msg = f"追问处理失败: {str(e)}"
-                logger.error(error_msg)
+                self.logger.error(error_msg)
                 raise
         
         if progress_callback:
@@ -593,8 +609,11 @@ async def run_multi_agent_travel_planner(message: str, model_provider="OpenAI",
         gemini_key=gemini_key,
         searchapi_key=searchapi_key
     )
-    
-    return await planner.plan_travel_with_multi_agents(message, progress_callback)
+
+    result = await planner.plan_travel_with_multi_agents(message, progress_callback)
+    # 添加 trace_id 到结果中
+    result['trace_id'] = planner.trace_id
+    return result
 
 
 # 异步处理追问的便捷函数

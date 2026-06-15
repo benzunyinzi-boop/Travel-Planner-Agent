@@ -486,6 +486,7 @@ def handle_multi_agent_travel_planning(form_data, all_keys_filled):
                         # 保存结果到会话状态
                         st.session_state['collected_info'] = result['collected_info']
                         st.session_state['travel_plan'] = result['detailed_itinerary']
+                        st.session_state['trace_id'] = result.get('trace_id', 'N/A')
                         st.session_state['travel_context'] = {
                             'source': form_data['source'],
                             'destination': form_data['destination'],
@@ -493,8 +494,13 @@ def handle_multi_agent_travel_planning(form_data, all_keys_filled):
                             'budget': form_data['budget'],
                             'preferences': form_data['travel_preferences']
                         }
-                        
+
                         st.success("🎉 Multi-Agent 旅行规划完成！")
+
+                        # 显示追踪ID
+                        with st.expander("🔍 查看请求追踪信息", expanded=False):
+                            st.code(f"Trace ID: {result.get('trace_id', 'N/A')}")
+                            st.caption("如遇到问题，请提供此 Trace ID 以便排查日志。")
                         
                         # 显示结果
                         st.markdown("---")
