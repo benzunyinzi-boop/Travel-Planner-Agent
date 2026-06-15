@@ -8,6 +8,7 @@
 import asyncio
 import os
 import json
+from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from agno.agent import Agent
@@ -23,6 +24,10 @@ from travel_prompts import (
     TRAVEL_MESSAGE_TEMPLATE,
     CONTEXT_MESSAGE_TEMPLATE
 )
+
+# 项目根目录
+PROJECT_ROOT = Path(__file__).parent.absolute()
+MCP_SERVER_PATH = PROJECT_ROOT / "mcp_server.py"
 
 # 导入智能体提示词
 try:
@@ -132,7 +137,7 @@ class MultiAgentTravelPlanner:
         model = self._get_model()
         
         async with MultiMCPTools(
-            ["python /mnt/public/code/zzy/wzh/doremi/searchAPI-mcp/mcp_server.py"],
+            [f"python {MCP_SERVER_PATH}"],
             env=env,
         ) as mcp_tools:
             
@@ -347,7 +352,7 @@ class MultiAgentTravelPlanner:
                 progress_callback(2, 4, "正在搜索最新信息...")
             
             async with MultiMCPTools(
-                ["python /mnt/public/code/zzy/wzh/doremi/searchAPI-mcp/mcp_server.py"],
+                [f"python {MCP_SERVER_PATH}"],
                 env=env,
             ) as mcp_tools:
                 # 使用带搜索工具的智能体
