@@ -78,14 +78,15 @@ class TravelInfo:
 class MultiAgentTravelPlanner:
     """多智能体旅行规划系统"""
     
-    def __init__(self, model_provider="OpenAI", openai_key=None, gemini_key=None, searchapi_key=None):
+    def __init__(self, model_provider="Qwen", openai_key=None, gemini_key=None, qwen_key=None, searchapi_key=None):
         """
         初始化多智能体旅行规划系统
 
         Args:
-            model_provider: 模型提供商 ("OpenAI" 或 "Gemini")
+            model_provider: 模型提供商 ("OpenAI" / "Qwen" / "Gemini")
             openai_key: OpenAI API密钥（可选，将从环境变量获取）
             gemini_key: Gemini API密钥（可选，将从环境变量获取）
+            qwen_key: 阿里云千问API密钥（可选，将从环境变量获取）
             searchapi_key: SearchAPI密钥（可选，将从环境变量获取）
         """
         # 生成本次会话的追踪ID
@@ -96,6 +97,7 @@ class MultiAgentTravelPlanner:
         # 优先使用传入的参数，否则从环境变量获取
         self.openai_key = openai_key or get_api_key("openai_key")
         self.gemini_key = gemini_key or get_api_key("gemini_key")
+        self.qwen_key = qwen_key or get_api_key("qwen_key")
         self.searchapi_key = searchapi_key or get_api_key("searchapi_key")
 
         self.logger.info(f"初始化旅行规划系统 - 模型提供商: {model_provider}")
@@ -106,6 +108,8 @@ class MultiAgentTravelPlanner:
             raise ValueError("🚨 缺少 SearchAPI API 密钥")
         elif self.model_provider == 'OpenAI' and not self.openai_key:
             raise ValueError("🚨 缺少 OpenAI API 密钥")
+        elif self.model_provider == 'Qwen' and not self.qwen_key:
+            raise ValueError("🚨 缺少阿里云千问 API 密钥")
         elif self.model_provider == 'Gemini' and not self.gemini_key:
             raise ValueError("🚨 缺少 Gemini API 密钥")
     
@@ -116,6 +120,13 @@ class MultiAgentTravelPlanner:
                 id="gpt-4.1",  # 使用xi-ai支持的模型
                 api_key=self.openai_key,
                 base_url="https://api.xi-ai.cn/v1",
+            )
+        elif self.model_provider == 'Qwen':
+            # 阿里云千问，使用OpenAI兼容接口
+            return OpenAIChat(
+                id="qwen-plus",  # 或 qwen-turbo, qwen-max
+                api_key=self.qwen_key,
+                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             )
         elif self.model_provider == 'Gemini':
             return Gemini(id="gemini-2.0-flash-exp", api_key=self.gemini_key)
@@ -128,12 +139,14 @@ class MultiAgentTravelPlanner:
             **os.environ,
             "SEARCHAPI_API_KEY": self.searchapi_key
         }
-        
+
         if self.model_provider == 'OpenAI':
             env["OPENAI_API_KEY"] = self.openai_key
+        elif self.model_provider == 'Qwen':
+            env["DASHSCOPE_API_KEY"] = self.qwen_key
         elif self.model_provider == 'Gemini':
             env["GOOGLE_API_KEY"] = self.gemini_key
-            
+
         return env
 
     @retry(
@@ -587,19 +600,20 @@ def build_context_message(travel_plan, travel_context, user_question):
 
 
 # 异步运行多智能体系统的便捷函数
-async def run_multi_agent_travel_planner(message: str, model_provider="OpenAI", 
-                                       openai_key=None, gemini_key=None, searchapi_key=None, progress_callback=None):
+async def run_multi_agent_travel_planner(message: str, model_provider="Qwen",
+                                       openai_key=None, gemini_key=None, qwen_key=None, searchapi_key=None, progress_callback=None):
     """
     运行多智能体旅行规划系统的便捷函数
-    
+
     Args:
         message: 旅行规划请求消息
-        model_provider: 模型提供商
+        model_provider: 模型提供商 (OpenAI/Qwen/Gemini)
         openai_key: OpenAI API密钥
         gemini_key: Gemini API密钥
+        qwen_key: 阿里云千问API密钥
         searchapi_key: SearchAPI密钥
         progress_callback: 进度回调函数
-        
+
     Returns:
         dict: 包含收集信息和详细行程的结果字典
     """
@@ -607,6 +621,7 @@ async def run_multi_agent_travel_planner(message: str, model_provider="OpenAI",
         model_provider=model_provider,
         openai_key=openai_key,
         gemini_key=gemini_key,
+        qwen_key=qwen_key,
         searchapi_key=searchapi_key
     )
 
@@ -617,21 +632,22 @@ async def run_multi_agent_travel_planner(message: str, model_provider="OpenAI",
 
 
 # 异步处理追问的便捷函数
-async def handle_multi_agent_follow_up(question: str, travel_context: dict, 
-                                     model_provider="OpenAI", openai_key=None, gemini_key=None, 
-                                     searchapi_key=None, progress_callback=None):
+async def handle_multi_agent_follow_up(question: str, travel_context: dict,
+                                     model_provider="Qwen", openai_key=None, gemini_key=None,
+                                     qwen_key=None, searchapi_key=None, progress_callback=None):
     """
     处理多智能体系统的追问
-    
+
     Args:
         question: 用户追问
         travel_context: 旅行上下文
-        model_provider: 模型提供商
+        model_provider: 模型提供商 (OpenAI/Qwen/Gemini)
         openai_key: OpenAI API密钥
         gemini_key: Gemini API密钥
+        qwen_key: 阿里云千问API密钥
         searchapi_key: SearchAPI密钥
         progress_callback: 进度回调函数
-        
+
     Returns:
         str: 追问的详细回答
     """
@@ -639,6 +655,7 @@ async def handle_multi_agent_follow_up(question: str, travel_context: dict,
         model_provider=model_provider,
         openai_key=openai_key,
         gemini_key=gemini_key,
+        qwen_key=qwen_key,
         searchapi_key=searchapi_key
     )
     

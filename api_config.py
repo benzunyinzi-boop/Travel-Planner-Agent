@@ -20,6 +20,7 @@ class APIKeyManager:
             "openai_key2": os.getenv("OPENAI_API_KEY2"),
             "google_key": os.getenv("GOOGLE_API_KEY"),
             "gemini_key": os.getenv("GEMINI_API_KEY"),
+            "qwen_key": os.getenv("DASHSCOPE_API_KEY"),
             "flights_key": os.getenv("FLIGHTS_API_KEY"),
             "hotels_key": os.getenv("HOTELS_API_KEY"),
             "maps_key": os.getenv("MAPS_API_KEY"),

@@ -202,8 +202,8 @@ def setup_sidebar():
         # 模型提供商选择
         st.session_state.model_provider = st.selectbox(
             "🤖 选择AI模型提供商",
-            ["OpenAI", "Gemini"],
-            index=["OpenAI", "Gemini"].index(st.session_state.model_provider),
+            ["Qwen", "OpenAI", "Gemini"],
+            index=["Qwen", "OpenAI", "Gemini"].index(st.session_state.model_provider) if st.session_state.model_provider in ["Qwen", "OpenAI", "Gemini"] else 0,
             help="选择您喜欢的AI模型提供商"
         )
 
@@ -214,9 +214,16 @@ def setup_sidebar():
             type="password",
             help="用于信息收集智能体访问Google搜索、地图、酒店、航班等所有搜索功能"
         )
-        
+
         # 根据选择的模型提供商显示相应的API密钥输入
-        if st.session_state.model_provider == "OpenAI":
+        if st.session_state.model_provider == "Qwen":
+            st.session_state.qwen_key = st.text_input(
+                "阿里云千问 API 密钥",
+                value=st.session_state.get('qwen_key', ''),
+                type="password",
+                help="用于两个智能体的AI推理能力（推荐使用）"
+            )
+        elif st.session_state.model_provider == "OpenAI":
             st.session_state.openai_key = st.text_input(
                 "OpenAI API 密钥",
                 value=st.session_state.openai_key,
@@ -230,12 +237,14 @@ def setup_sidebar():
                 type="password",
                 help="用于两个智能体的AI推理能力"
             )
-        
+
         # 检查是否填写了所有必需的 API 密钥
         required_keys = [st.session_state.searchapi_key]
-        
+
         # 根据选择的模型添加相应的API密钥检查
-        if st.session_state.model_provider == "OpenAI":
+        if st.session_state.model_provider == "Qwen":
+            required_keys.append(st.session_state.get('qwen_key', ''))
+        elif st.session_state.model_provider == "OpenAI":
             required_keys.append(st.session_state.openai_key)
         elif st.session_state.model_provider == "Gemini":
             required_keys.append(st.session_state.gemini_key)
@@ -246,9 +255,11 @@ def setup_sidebar():
             st.error("❌ 请填写所有必需的 API 密钥以启用 Multi-Agent 系统")
         else:
             st.success("✅ Multi-Agent 系统已就绪")
-        
+
         # 显示当前选择的模型信息
-        if st.session_state.model_provider == "OpenAI":
+        if st.session_state.model_provider == "Qwen":
+            st.info("🤖 使用阿里云千问（Qwen）驱动两个智能体")
+        elif st.session_state.model_provider == "OpenAI":
             st.info("🤖 使用 OpenAI GPT-4o-mini 驱动两个智能体")
         elif st.session_state.model_provider == "Gemini":
             st.info("🤖 使用 Google Gemini 2.0 驱动两个智能体")
@@ -279,12 +290,17 @@ def setup_sidebar():
             1. 访问 [SearchAPI.io](https://www.searchapi.io/)
             2. 注册账户并获取免费API密钥
             3. 支持Google搜索、地图、酒店、航班搜索
-            
+
+            **阿里云千问 API 密钥（推荐）:**
+            1. 访问 [阿里云百炼平台](https://bailian.console.aliyun.com/)
+            2. 开通DashScope服务并获取API密钥
+            3. 支持 qwen-plus, qwen-turbo, qwen-max 等模型
+
             **OpenAI API 密钥:**
             1. 访问 [OpenAI Platform](https://platform.openai.com/)
             2. 注册并获取API密钥
             3. 或使用兼容的API服务
-            
+
             **Gemini API 密钥:**
             1. 访问 [Google AI Studio](https://aistudio.google.com/)
             2. 获取免费的Gemini API密钥
@@ -478,6 +494,7 @@ def handle_multi_agent_travel_planning(form_data, all_keys_filled):
                         model_provider=st.session_state.model_provider,
                         openai_key=st.session_state.openai_key,
                         gemini_key=st.session_state.gemini_key,
+                        qwen_key=st.session_state.get('qwen_key', ''),
                         searchapi_key=st.session_state.searchapi_key,
                         progress_callback=progress_callback
                     ))
